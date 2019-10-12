@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>小球动画</title>
+</head>
+<style>
+  *{
+    padding: 0;
+    margin: 0;
+  }
+  #content{
+    width: 100vw;
+    height: 100vh;
+    background-color: bisque;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  span{
+    position: absolute;
+    border-radius: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: right 1s linear infinite;
+    user-select:none;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1)
+  }
+  @keyframes right {
+    0%{
+      transform: rotate(0);
+    }
+    100%{
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes left {
+    0%{
+      transform: rotate(0);
+    }
+    100%{
+      transform: rotate(-360deg);
+    }
+  }
+</style>
+<body>
+  <div id="content">
+
+  </div>
+</body>
+<script>
+  const content = document.getElementById('content')
+  class Ball {
+    constructor(x, y, height, text, size) {
+      this.size = size
+      this.offsetHeight = height
+      // 重力加速度，每秒钟300px
+      this.gravity = 100
+      // 摩擦系数
+      this.frictional = 0.9
+      this.rightSpeed = Math.random() > 0.5 ? Math.random() * 100 + 30 : -Math.random() * 100 - 30
+      this.next = true
+      this.colorList = ['rgba(64, 158, 255, 0.71)', 'rgba(103, 194, 58, 0.71)', 'rgba(230, 162, 60, 0.71)', 'rgba(245, 108, 108, 0.71)', 'rgba(144, 147, 153, 0.71)', 'rgba(103, 10, 149, 0.71)', 'rgba(181, 197, 35, 0.71)']
+      this.x = x
+      this.y = y
+      this.dom = document.createElement('span')
+      this.dom.style.width = size + 'px'
+      this.dom.style.height = size + 'px'
+      this.dom.style.animation = this.rightSpeed > 0 ? 'right 3s linear infinite' : 'left 3s linear infinite'
+      this.dom.innerText = text
+      this.dom.style.left = this.x + 'px'
+      this.dom.style.top = this.y  + 'px'
+      this.dom.style.backgroundColor = Ball.random(this.colorList)
+      this.dom.style.boxShadow = `0 0 12px 0 ${this.dom.style.backgroundColor}`
+      content.appendChild(this.dom)
+    }
+    static random(list) {
+      const length = list.length
+      return list[Math.floor(Math.random() * length)]
+    }
+    move() {
+      let start = new Date()
+      let speed = 0
+      let distance = 0
+      let rightdistance = 0
+      let inter = setInterval(() => {
+        speed += this.gravity * (new Date() - start) / 1000
+        distance += speed * (new Date() - start) / 1000
+        rightdistance += this.rightSpeed * (new Date() - start) / 1000
+        start = new Date()
+        if (rightdistance + this.x > document.body.clientWidth || rightdistance + this.x < - this.size) {
+          clearInterval(inter)
+          this.dom.remove()
+        }else if (this.y + distance < this.offsetHeight - this.size) {
+          this.dom.style.top = distance + this.y + 'px'
+          this.dom.style.left = rightdistance + this.x + 'px'
+        } else if (this.y + distance > this.offsetHeight - this.size && this.next) {
+          this.next = false
+          setTimeout(() => {
+            this.next = true
+          }, 30)
+          speed = -speed * this.frictional
+          if (Math.abs(speed) < 10 && !rightdistance + this.x > document.body.clientWidth) {
+            speed = 0
+          }
+        } else {
+          this.dom.style.left = rightdistance + this.x + 'px'
+        }
+      }, 17)
+    }
+  }
+  setInterval(() => {
+    const size = Math.random() * 150 + 40
+    const x = Math.floor(Math.random() * (document.body.clientWidth + 1))
+    const y = Math.floor(Math.random() * (document.body.clientHeight - size - 1) - size)
+    let ball = null
+    if (new Date().getSeconds().toString().length - 1) {
+      ball = new Ball(x, y, document.body.clientHeight, new Date().getSeconds().toString()[1], size)
+    } else {
+      ball = new Ball(x, y, document.body.clientHeight, new Date().getSeconds().toString()[0], size)
+    }
+    ball.move()
+  }, 1000)
+</script>
+</html>

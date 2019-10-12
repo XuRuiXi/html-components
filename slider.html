@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>slider</title>
+</head>
+<style>
+    *{margin: 0;padding: 0;}
+    body{width: 100vw;height: 100vh;display: flex;justify-content: center;align-items: center;}
+    ul {position: absolute;bottom: 10px;left: 50%;transform: translate(-50%, 0);display: inline-flex;justify-content: space-between;align-items: center;}
+    ul li {list-style: none;position: relative;background-color: white;width: 13px;height: 13px;border-radius: 100%;margin: 0 10px;cursor: pointer;border: 1px solid #eee;transition: all 0.2s;}
+    ul .active{background-color: #666;}
+    #container{border: 1px solid #ddd;margin:  0 auto;position: relative;overflow: hidden;}
+    .prev,.next{position: absolute;transform: translate(0, -50%);color: white;display: inline-block;padding: 20px 5px;background-color: rgba(102, 102, 102, 0.3);}
+    .prev:hover,.next:hover{cursor: pointer;background-color: rgba(102, 102, 102, 0.5);}
+    .prev{left: 0;top: 50%;}
+    .next{right: 0;top: 50%;}
+    .pictures{height: 100%;position: relative;left: 0;}
+    .item{display: inline-flex;justify-content: center;align-items: center;height: 100%;}
+    .item:hover{cursor: pointer;}
+    .item img{max-width: 100%;max-height: 100%;}
+</style>
+<body>
+    <div id="container"></div>
+</body>
+<script>
+    class xrxSlider {
+        constructor({
+                        el,
+                        list,
+                        width=500,
+                        height=250,
+                        interval=true,
+                        time=2000,
+                        animation=true,
+                        speed=500,
+                        nav=true,
+                        dot=true,
+                        buttonText={left: 'PREV', right: 'NEXT'}
+        }) {
+            // 控制样式
+            this.length = list.length
+            this.pictureList = [list[list.length - 1], ...list, list[0]]
+            this.width = width
+            this.height = height
+            this.speed = speed
+            this.dot = dot
+            this.nav = nav
+            this.interval = interval
+            this.time = time
+            this.buttonText = buttonText
+            this.animation = animation
+            this.autoInterval = null
+            this.start = null
+            this.distance = null
+            this.dots = null
+            this.prev = null
+            this.next = null
+            this.pictureBox = null
+            // 为了实现数据响应，特意设置成对象模式
+            this.currentPage = {
+                value: 0
+            }
+            this.currentDot = 0
+            this.node = el
+            this.Shell = `<div class="pictures" id="pictures" style="left: -${this.width}px"></div>
+                          <ul class="dots" id="dots"></ul>
+                          <span class="prev" style="display: ${this.nav ? '' : 'none'}">${this.buttonText.left}</span>
+                          <span class="next" style="display: ${this.nav ? '' : 'none'}">${this.buttonText.right}</span>`
+            this.create(this.pictureList)
+        }
+        // 创建轮播图组件
+        create(list) {
+            if (list.length === 2) throw '没有检测到图片/图片列表发生错误'
+            this.appendShell()
+            this.appendPictureList()
+            this.bindEvent()
+            this.resetCss()
+            // 给currentPage绑定change事件
+            let currentPage = 0
+            Object.defineProperty(this.currentPage, 'value', {
+                get: () => {
+                    return currentPage
+                },
+                set: (v) => {
+                    // 判断是否最前/最后一张图片
+                    switch (v) {
+                        case -1:
+                            this.currentDot = this.length - 1
+                            setTimeout(() => {
+                                this.pictureBox.style.transition = ``;
+                                currentPage = this.length - 1
+                                this.changePicturePosition()
+                                setTimeout(() => {
+                                    this.pictureBox.style.transition = `${this.animation ? this.speed : 0}ms all`;
+                                },50)
+                            },this.speed);
+                            break
+                        case this.length:
+                            this.currentDot = 0
+                            setTimeout(() => {
+                                this.pictureBox.style.transition = ``;
+                                currentPage = 0
+                                this.changePicturePosition()
+                                setTimeout(() => {
+                                    this.pictureBox.style.transition = `${this.animation ? this.speed : 0}ms all`;
+                                },50)
+                            },this.speed)
+                            break
+                        default:
+                            this.currentDot = v
+                    }
+                    currentPage = v
+                    this.changePicturePosition()
+                    this.repaintDots()
+                }
+            })
+            // 如果存在自动轮播，则设置
+            this.auto(this.interval)
+        }
+        // 添加组件主要外壳
+        appendShell() {
+            this.node.innerHTML = this.Shell
+            this.dots = document.getElementById('dots')
+        }
+        // 添加图片列表和导航点
+        appendPictureList() {
+            this.pictureBox = document.getElementById('pictures');
+            this.pictureBox.style.transition = `${this.animation ? this.speed : 0}ms all`;
+            this.pictureList.forEach((item) => {
+                this.pictureBox.innerHTML += `<div class="item"><img src="${item}" alt=""></div>`
+            });
+            // 设置相应数量的dot数量
+            if (this.dot) {
+                for (let i = 0; i < this.length; i++) {
+                    document.getElementById('dots').innerHTML += `<li></li>`
+                }
+            }
+        }
+        // 改变图片的位置
+        changePicturePosition() {
+            this.pictureBox.style.left = -(this.currentPage.value * this.width + this.width) +'px'
+        }
+        // 给dom绑定事件
+        bindEvent() {
+            this.prev = document.querySelector('.prev')
+            this.next = document.querySelector('.next')
+            // 防止未完成动画之前重复点击，动画时间长度的事件失效时延
+            let leftClickTime = null
+            let rightClickTime = null
+            this.prev.addEventListener('click', () => {
+                if (!leftClickTime) {
+                    leftClickTime = new Date()
+                    this.currentPage.value--
+                } else if (leftClickTime && (new Date() - leftClickTime) > this.speed + 50) {
+                    leftClickTime = new Date()
+                    this.currentPage.value--
+                }
+            })
+            this.next.addEventListener('click', () => {
+                if (!rightClickTime) {
+                    rightClickTime = new Date()
+                    this.currentPage.value++
+                } else if (rightClickTime && (new Date() - rightClickTime) > this.speed + 50) {
+                    rightClickTime = new Date()
+                    this.currentPage.value++
+                }
+            })
+            // 事件委托绑定dot点击事件
+            this.dots.addEventListener('click', (e) => {
+                if (e.target.nodeName === 'LI') {
+                    this.currentPage.value = [...document.querySelectorAll('.dots li')].indexOf(e.target)
+                }
+            })
+            // 添加触摸事件，让轮播图组件支持触摸滚动
+            this.pictureBox.addEventListener('touchstart', (e) => {
+                clearInterval(this.autoInterval)
+                this.pictureBox.style.transition = ``;
+                this.start = e.changedTouches[0].clientX
+            })
+            this.pictureBox.addEventListener('touchmove', (e) => {
+                this.distance = e.changedTouches[0].clientX - this.start
+                this.pictureBox.style.left = this.distance + ( -this.currentPage.value * this.width - this.width) + 'px'
+
+            })
+            this.pictureBox.addEventListener('touchend', (e) => {
+                this.autoInterval = this.getAuto()
+                this.pictureBox.style.transition = `${this.animation ? this.speed : 0}ms all`;
+                if (this.distance > 250) {
+                    this.currentPage.value--
+                } else if (this.distance < -250) {
+                    this.currentPage.value++
+                }
+                this.changePicturePosition()
+                this.repaintDots()
+                this.start = null
+                this.distance = null
+            })
+        }
+        //设置自动轮播
+        auto(judge) {
+            if (judge) {
+                this.autoInterval = this.getAuto()
+                // 添加鼠标移出移入的轮播暂停
+                this.node.addEventListener('mouseover', () => {
+                    clearInterval(this.autoInterval)
+                })
+                this.node.addEventListener('mouseout', () => {
+                    this.autoInterval = this.getAuto()
+                })
+            }
+        }
+        // 获取自动轮播函数
+        getAuto() {
+            return setInterval(() => {
+                this.currentPage.value++
+            }, this.time)
+        }
+        // 重绘导航点
+        repaintDots() {
+            if (this.dot) {
+                document.querySelectorAll('.dots li').forEach((item, index) => {
+                    item.classList.remove('active')
+                    if (index === this.currentDot) item.classList.add('active')
+                })
+            }
+        }
+        // 初始化轮播图样式
+        resetCss() {
+            const items = document.querySelectorAll('.item');
+            this.node.style.width = this.width + 'px';
+            this.node.style.height = this.height + 'px';
+            this.pictureBox.style.width = (this.length + 2) * 100 + '%';
+            items.forEach(item => {
+                item.style.width = 100/(this.length + 2) + '%'
+            })
+            this.repaintDots()
+        }
+        // 如果图片列表有变动，新建的对象可以执行reload这个函数，传入新数组，以更新视图
+        reload(list) {
+            if (list) {
+                this.length = list.length
+                this.pictureList = list
+            }
+            this.create()
+        }
+    }
+
+    /**
+     * (2019-9-27)
+     * el: 轮播图容器的dom元素
+     * list: 图片列表（Array）
+     * height: 轮播图高度（Number）            默认250
+     * width: 轮播图宽度（Number）             默认500
+     * speed: 图片切换速度(ms)                 默认500
+     * animation: 是否显示动画(Boolean)        默认true
+     * dot: 是否显示导航点(Boolean)            默认true
+     * nav: 是否显示左右两侧导航条(Boolean)    默认true
+     * buttonText 左右按钮的文字（Object）     默认{left: 'PREV', right: 'NEXT'}
+     * interval:是否自动轮播(Boolean)          默认false
+     * time: 轮播时间间隔(ms)                  默认2000
+     *
+     * 如果生成组件后，还需要异步重置轮播图组件，可以调用生成新实例的reload(list)方法，重置组件。
+     * 例如 var slider = new xrxSlider()
+     * slider.reload(newImgList)
+     */
+
+    // 调用组件
+    const slider = new xrxSlider({
+        el: document.getElementById('container'),
+        list: pictureList = [
+            'http://pic13.nipic.com/20110409/7119492_114440620000_2.jpg',
+            'http://res11-aipai-pic.weplay.cn/aipai/gonghui/201209/02/6dde4830bad6b44af690f59fa3fcacbc.jpg',
+            'http://pic13.nipic.com/20110409/7119492_114440620000_2.jpg',
+            'http://res11-aipai-pic.weplay.cn/aipai/gonghui/201209/02/6dde4830bad6b44af690f59fa3fcacbc.jpg'
+        ],
+        time: 1000
+    })
+</script>
+</html>

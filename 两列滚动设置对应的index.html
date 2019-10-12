@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <title>Title</title>
+</head>
+<body>
+    <div id="app">
+        <div class="left" id="leftScroll">
+            <span v-for="item in arr" :ref="item" :id="item">{{item}}</span>
+        </div>
+        <div class="right">
+            <span v-for="(item, index) in arr" :class="{active: current === index}"><a :href="'#' + item">{{item}}</a></span>
+        </div>
+    </div>
+</body>
+<script>
+
+    new Vue({
+        el: '#app',
+        data: {
+            arr: ['A', 'B', 'C', 'D', 'E'],
+            // 当前激活的元素，显示active
+            current: 0
+        },
+        mounted() {
+            const scroll = document.getElementById('leftScroll')
+            scroll.addEventListener('scroll', (e) => {
+                // 新建一个存放每个滚动元素位置的数组
+                const arr = []
+                // 循环Vue的$refs属性，获取每个dom,然后计算它距离顶部的位置，并且把位置信息存放在它的top属性里面
+                for (const key in this.$refs) {
+                    this.$refs[key].top = this.$refs[key][0].getBoundingClientRect().y
+                    console.log(this.$refs[key][0].getBoundingClientRect())
+                }
+                // 循环$refs属性，获取每个元素的高度，并且放在arr数组里面
+                for (const key in this.$refs) {
+                    arr.push(Math.abs(this.$refs[key].top))
+                }
+                // 获取数组里面的最小值，并且获取下标，current
+                let min = Math.min(...arr)
+                this.current = arr.indexOf(min)
+            })
+        }
+    })
+</script>
+<style>
+    *{
+        padding: 0;
+        margin: 0;
+    }
+    .active{
+        background-color: bisque;
+    }
+    #app{
+        width: 300px;
+        border: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        margin: 100px auto;
+
+    }
+    .left, .right{
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        width: 50px;
+        border: 1px solid #660066;
+        height: 200px;
+        overflow-y: auto;
+    }
+    #leftScroll{
+        scroll-behavior:smooth
+    }
+    .left span{
+        min-height: 300px;
+    }
+    .right span{
+        width: 100%;
+        text-align: center;
+        height: 100%;
+        line-height: 40px;
+    }
+</style>
+</html>
