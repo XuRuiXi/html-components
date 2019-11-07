@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	    <meta charset="UTF-8">
+	    <title>分享</title>
+	</head>
+	<style>
+		*{
+			margin: 0;
+			padding: 0;
+		}
+		body{
+			background-image: url(../image/每成功邀请1位好友开通VIP年卡@2x.png);
+	    	background-size: 100%;
+		}
+		.details{
+		    width: 100%;/*width: 80vw;*/
+		    height: 700px;
+		    background-color: white;
+		    position: fixed;
+		    /*transform: translate(10vw,0);*/
+		    border-radius: 40px 40px 0 0;
+		}
+		.details::after{
+		    content: '';
+		    width: 80%;
+		    height: 20px;
+		    position: absolute;
+		    top: 30px;
+		    left: 10vw;
+		}
+		.title{
+			margin: 32px 0 56px 0;
+			text-align: center;
+			color: 	#fd462b;
+			font-size: 36px;
+		}
+		.neirong{
+			width: 85%;
+			margin: 0 auto;
+			height: 100%;
+		}
+		.neirongstyle{
+			color: #999999;
+			font-size: 30px;
+			line-height: 50px;
+			margin: 46px 0 46px 0;
+		}
+	</style>
+	<body>
+	  	<div class="click details" style="bottom: -570px;">
+	  		<div class="guize">
+	  			<div class="title">活动规则</div>
+	  			<div class="neirong">
+	  				<div class="neirongstyle">
+	  					1.用户每成功邀请一位好友开通稚研VIP年卡，即
+						可获赠1个月VIP权限，多邀多得。
+	  				</div>
+	  				<div class="neirongstyle">
+	  					2.好友需通过您的专属分享码或分享页面注册稚研
+						账号，其他途径无法识别为您的好友。
+	  				</div>
+	  				<div class="neirongstyle">
+	  					3.好友开通VIP年卡成功后，30分钟内月卡将赠送
+						到位。
+	  				</div>
+	  				<div class="neirongstyle">
+	  					4.活动有效期：即日起至2020年10月31日。
+	  				</div>
+	  				<div class="neirongstyle">
+	  					5.本公司在法律允许的范围内享有解释权。
+	  				</div>
+	  			</div>
+	  		</div>
+	  	</div>
+	</body>
+	<script>
+	  	let start = null
+	  	let distance = null
+	  	let bottom = Number(document.querySelector('.details').style.bottom.replace(/px/g, ''))
+	  	document.querySelector('.details').ontouchstart = function (e) {
+		    start = e.changedTouches[0].clientY
+		}
+	  	document.querySelector('.details').ontouchmove = function (e) {
+	    	distance = start - e.changedTouches[0].clientY
+		    if (this.top) {
+		      if (distance < 0 && distance > bottom) {
+		        this.style.bottom = distance + 'px'
+		      }
+		    } else {
+		      if (distance > 0 && distance < Math.abs(bottom)) {
+		        this.style.bottom = distance + bottom + 'px'
+		      }
+		    }
+	  	}
+	  	document.querySelector('.details').ontouchend = function (e) {
+		    distance = start - e.changedTouches[0].clientY
+		    if (distance > 250) {
+		      	let middleDistance = (Math.abs(bottom)-distance)/(500/60)
+		       	let inter = setInterval(() => {
+		        if (distance < Math.abs(bottom)) {
+		          distance += middleDistance
+		        } else {
+		          	if (!this.top) {
+		            // 将其标志为上
+		            this.top = true
+		          	}
+		          	clearInterval(inter)
+		        }
+		        if (distance > Math.abs(bottom)) distance = Math.abs(bottom)
+		        	this.style.bottom = distance + bottom + 'px'
+		      	}, 500/60)
+		    } else {
+		      	let middleDistance
+		      	if (this.top) {
+		        	middleDistance = (Math.abs(bottom)+distance)/(500/60)
+		      	} else {
+		       	 	middleDistance = distance/(500/60)
+		      	}
+		      	if (this.top && distance < -1) {
+		        	let inter = setInterval(() => {
+		          	if (distance > bottom) {
+		           		distance -= middleDistance
+		         	} else {
+			            clearInterval(inter)
+			            this.top = false
+		          	}
+		          	if (distance < bottom) distance = bottom
+		          	this.style.bottom = distance + 'px'
+		        }, 2000/60)
+		      	} else {
+		      		if(!this.top && distance < 0) return
+		        	let inter = setInterval(() => {
+		            if (distance > 0) {
+		            	distance -= middleDistance
+		          	} else {
+		            	clearInterval(inter)
+		          	}
+		         	if (distance < bottom) distance = 0
+		          	this.style.bottom = distance + bottom + 'px'
+		        	}, 500/60)
+		    	}
+	    	}
+		}
+	</script>
+</html>
