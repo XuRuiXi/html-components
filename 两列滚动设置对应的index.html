@@ -26,8 +26,11 @@
         },
         mounted() {
             const scroll = document.getElementById('leftScroll')
-            scroll.addEventListener('scroll', (e) => {
-                // 新建一个存放每个滚动元素位置的数组
+            scroll.addEventListener('scroll', this.scroll)
+        },
+        methods: {
+            scroll(e) {
+         // 新建一个存放每个滚动元素位置的数组
                 const arr = []
                 // 循环Vue的$refs属性，获取每个dom,然后计算它距离顶部的位置，并且把位置信息存放在它的top属性里面
                 for (const key in this.$refs) {
@@ -41,7 +44,7 @@
                 // 获取数组里面的最小值，并且获取下标，current
                 let min = Math.min(...arr)
                 this.current = arr.indexOf(min)
-            })
+            }
         }
     })
 </script>
